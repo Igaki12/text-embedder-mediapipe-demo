@@ -27,12 +27,13 @@ limitations under the License. -->
             font-family: roboto;
             margin: 2em;
             color: #3d3d3d;
-            --mdc-theme-primary: #007f8b;
+            --mdc-theme-primary: #571a00;
             --mdc-theme-on-primary: #f1f3f4;
+            background-color: beige;
         }
 
         h1 {
-            color: #007f8b;
+            color: #571a00;
         }
 
         h2 {
@@ -51,6 +52,10 @@ limitations under the License. -->
             transition: opacity 500ms ease-in-out;
         }
 
+        textarea {
+            background-color: white;
+        }
+
         .mdc-text-field {
             margin-right: 16px;
             margin-top: 16px;
@@ -58,7 +63,7 @@ limitations under the License. -->
 
         .mdc-text-field__input {
             height: 100px;
-            --mdc-theme-primary: #12b5cb;
+            --mdc-theme-primary: #ffb78a;
             --mdc-theme-on-primary: #f1f3f4;
         }
 
@@ -75,6 +80,11 @@ limitations under the License. -->
         #calculate {
             margin-top: 20px;
         }
+
+        .question-sentence {
+            color: #571a00;
+            margin: 20px 20px 0 20px;
+        }
     </style>
 </head>
 
@@ -88,8 +98,10 @@ limitations under the License. -->
         <p><em>Note: Two sentence of the same topic but with opposite meaning will have high similarity score, while two
                 sentence of unrelated topics will have low similarity score.</em></p>
         <p>Add text to the input fields, and then press <b>Calculate</b> to measure similarity.</p>
-
         <div style="display: block;">
+            <h2 class="question-sentence">(問題) 大阪大学 生物過去問から
+            </h2>
+            <img src="./question1.jpg" alt="question1" style="width: 100%;"></br>
             <label id="textField1"
                 class="mdc-text-field mdc-text-field--filled mdc-text-field--textarea mdc-text-field--no-label">
                 <span class="mdc-text-field__ripple"></span>
@@ -105,8 +117,12 @@ limitations under the License. -->
                 <span class="mdc-text-field__ripple"></span>
                 <span class="mdc-text-field__resizer">
 
-                    <textarea id="textInput2" class="mdc-text-field__input" rows="8" cols="40" aria-label="Text Input"
-                        placeholder="Enter text to compare here"></textarea>
+                    <!-- <textarea id="textInput2" class="mdc-text-field__input" rows="8" cols="40" aria-label="Text Input"
+                        placeholder="Enter text to compare here"></textarea> -->
+                    <textarea class="mdc-text-field__input" id="textInput2" aria-label="answerField"
+                        style="background-color: #571a00; color: #571a00; width: 100%; transition: all 1s;" disabled
+                        rows="8" cols="40">2種が異なるサイズの餌を摂食する場合、 種間相互作用は弱く共存が可能となる。 2種が同様サイズの餌を食べる場合は種間相互作用が強くなって競争的排除が生じ、 一方の種が他方の種を駆逐する。
+                </textarea>
                 </span>
                 <span class="mdc-line-ripple"></span>
             </label></br>
@@ -155,14 +171,16 @@ limitations under the License. -->
 
         calculateBt.addEventListener("click", calculateSimilarity);
 
-        async function calculateSimilarity() {
+        async function calculateSimilarity() {    
             const text1 = textInput1.value;
             const text2 = textInput2.value;
+            // alert(text2)
 
             if (text1 == "" || text2 == "") {
                 alert("Please enter text in both boxes to compare");
                 return;
             }
+            document.getElementById("textInput2").style.backgroundColor = "white";
             resultLB.innerText = "Computing similarity...";
 
             // Wait to run the function until inner text is set
