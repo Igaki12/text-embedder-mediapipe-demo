@@ -1,0 +1,187 @@
+<!-- Copyright 2023 The MediaPipe Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. -->
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaPipe Text Embedder</title>
+    <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+    <style>
+        @use "@material";
+
+        body {
+            font-family: roboto;
+            margin: 2em;
+            color: #3d3d3d;
+            --mdc-theme-primary: #007f8b;
+            --mdc-theme-on-primary: #f1f3f4;
+        }
+
+        h1 {
+            color: #007f8b;
+        }
+
+        h2 {
+            clear: both;
+            /* font-size */
+        }
+
+
+        button {
+            min-width: 200px;
+            height: 50px;
+        }
+
+        section {
+            opacity: 1;
+            transition: opacity 500ms ease-in-out;
+        }
+
+        .mdc-text-field {
+            margin-right: 16px;
+            margin-top: 16px;
+        }
+
+        .mdc-text-field__input {
+            height: 100px;
+            --mdc-theme-primary: #12b5cb;
+            --mdc-theme-on-primary: #f1f3f4;
+        }
+
+        #result {
+            min-height: 100px;
+            min-width: 500px;
+            font-weight: bold;
+        }
+
+        .invisible {
+            opacity: 0.2;
+        }
+
+        #calculate {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Measure text similarity using the MediaPipe Text Embedder task</h1>
+    <section id="demos" class="invisible">
+        <h2>This demo calculates the embedding of the two piece of input text and measure their topic similarity.</h2>
+        <p>Cosine similarity ranges from -1 to 1, with a higher number meaning the two texts' topics are more similar.
+        </p>
+        <p><em>Note: Two sentence of the same topic but with opposite meaning will have high similarity score, while two
+                sentence of unrelated topics will have low similarity score.</em></p>
+        <p>Add text to the input fields, and then press <b>Calculate</b> to measure similarity.</p>
+
+        <div style="display: block;">
+            <label id="textField1"
+                class="mdc-text-field mdc-text-field--filled mdc-text-field--textarea mdc-text-field--no-label">
+                <span class="mdc-text-field__ripple"></span>
+                <span class="mdc-text-field__resizer">
+
+                    <textarea id="textInput1" class="mdc-text-field__input" rows="8" cols="40" aria-label="Text Input"
+                        placeholder="Enter text here"></textarea>
+                </span>
+                <span class="mdc-line-ripple"></span>
+            </label>
+            <label id="textField2"
+                class="mdc-text-field mdc-text-field--filled mdc-text-field--textarea mdc-text-field--no-label">
+                <span class="mdc-text-field__ripple"></span>
+                <span class="mdc-text-field__resizer">
+
+                    <textarea id="textInput2" class="mdc-text-field__input" rows="8" cols="40" aria-label="Text Input"
+                        placeholder="Enter text to compare here"></textarea>
+                </span>
+                <span class="mdc-line-ripple"></span>
+            </label></br>
+        </div>
+
+
+        <button id="calculate" class="mdc-button mdc-button--raised">
+            <span class="mdc-button__label">CALCULATE</span>
+        </button></br>
+        <p><b>Similarity:</b></p>
+        <p id="result"></p>
+    </section>
+
+    <script type="module">
+        import { MDCTextField } from "https://cdn.skypack.dev/@material/textfield";
+        import { MDCRipple } from "https://cdn.skypack.dev/@material/ripple";
+        import text from "https://cdn.skypack.dev/@mediapipe/tasks-text@0.10.0";
+        const { TextEmbedder, FilesetResolver, TextEmbedderResult } = text;
+
+        const demosSection = document.getElementById("demos");
+
+        let textEmbedder;
+
+        // Before we can use TextEmbedder class we must wait for it to finish loading.
+        async function createEmbedder() {
+            const textFiles = await FilesetResolver.forTextTasks(
+                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@0.10.0/wasm"
+            );
+            textEmbedder = await TextEmbedder.createFromOptions(textFiles, {
+                baseOptions: {
+                    modelAssetPath: `https://storage.googleapis.com/mediapipe-models/text_embedder/universal_sentence_encoder/float32/1/universal_sentence_encoder.tflite`
+                }
+            });
+            demosSection.classList.remove("invisible");
+        }
+        createEmbedder();
+
+        const textInput1 = new MDCTextField(
+            document.getElementById("textField1")
+        );
+        const textInput2 = new MDCTextField(
+            document.getElementById("textField2")
+        );
+        const calculateBt = document.getElementById("calculate");
+        const resultLB = document.getElementById("result");
+
+        calculateBt.addEventListener("click", calculateSimilarity);
+
+        async function calculateSimilarity() {
+            const text1 = textInput1.value;
+            const text2 = textInput2.value;
+
+            if (text1 == "" || text2 == "") {
+                alert("Please enter text in both boxes to compare");
+                return;
+            }
+            resultLB.innerText = "Computing similarity...";
+
+            // Wait to run the function until inner text is set
+            await sleep(5);
+
+            const embeddingResult1 = await textEmbedder.embed(text1);
+            const embeddingResult2 = await textEmbedder.embed(text2);
+
+            // Compute cosine similarity.
+            const similarity = TextEmbedder.cosineSimilarity(
+                embeddingResult1.embeddings[0],
+                embeddingResult2.embeddings[0]
+            );
+            resultLB.innerText = similarity.toFixed(2);
+        }
+
+        function sleep(ms) {
+            return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
+    </script>
+</body>
